@@ -33,6 +33,7 @@ npm.cmd run dev
 
 ```powershell
 npm.cmd run typecheck
+npm.cmd test
 npm.cmd run build
 ```
 

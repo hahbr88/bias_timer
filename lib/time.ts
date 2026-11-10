@@ -1,5 +1,11 @@
 import type { AlarmType, FavoriteEvent, Idol } from '../types/idol';
 
+export const MAX_NOTIFICATION_DELAY_MS = 60_000;
+
+export function isNotificationWithinDeliveryWindow(scheduledAt: number, now = Date.now()) {
+  return now - scheduledAt < MAX_NOTIFICATION_DELAY_MS;
+}
+
 export function getFavoriteTimes(month: number, day: number): [string, string] {
   const hour = month % 12;
   const minute = String(day).padStart(2, '0');

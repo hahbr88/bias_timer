@@ -1,11 +1,10 @@
 import { browser } from 'wxt/browser';
-import { getUpcomingEvents } from './time';
+import { getUpcomingEvents, isNotificationWithinDeliveryWindow } from './time';
 import { getIdols, getSettings } from './storage';
 import { getPhotoDataUrl } from './images';
 import type { AlarmType, FavoriteEvent } from '../types/idol';
 
 const PREFIX = 'bias-timer:';
-const MAX_NOTIFICATION_DELAY_MS = 60_000;
 
 export function alarmName(event: FavoriteEvent) {
   return `${PREFIX}${event.type}:${event.at.getTime()}`;
@@ -29,7 +28,7 @@ export function parseAlarm(name: string): { type: AlarmType; at: number } | null
 export async function showAlarmNotification(name: string) {
   const parsed = parseAlarm(name);
   if (!parsed) return;
-  if (Date.now() - parsed.at >= MAX_NOTIFICATION_DELAY_MS) return;
+  if (!isNotificationWithinDeliveryWindow(parsed.at)) return;
   const [idols, settings] = await Promise.all([getIdols(), getSettings()]);
   const event = getUpcomingEvents(idols, new Date(parsed.at - 1000), settings.notificationLeadMinutes)
     .find((item) => item.type === parsed.type && item.at.getTime() === parsed.at);
