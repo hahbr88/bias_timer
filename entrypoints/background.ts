@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { MAINTENANCE_ALARM_NAME, openNotificationLink, scheduleNextAlarm, showAlarmNotification } from '../lib/scheduler';
+import { resetI18n } from '../lib/i18n';
 
 export default defineBackground(() => {
   async function rescheduleSafely() {
@@ -15,6 +16,7 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message: unknown) => {
     const type = (message as { type?: string })?.type;
     if (type === 'DATA_CHANGED' || type === 'CHECK_SCHEDULE') void rescheduleSafely();
+    if (type === 'LANGUAGE_CHANGED') resetI18n();
   });
   browser.alarms.onAlarm.addListener(async (alarm) => {
     try {

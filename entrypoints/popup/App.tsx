@@ -9,7 +9,7 @@ import { clearRegistrationDraft, getIdols, getRegistrationDraft, notifyDataChang
 import { getFavoriteTimes, getNextFavorite } from '../../lib/time';
 import type { Idol, RegistrationDraft } from '../../types/idol';
 import { createBackup, restoreBackup } from '../../lib/backup';
-import { t } from '../../lib/i18n';
+import { getLanguagePreference, setLanguagePreference, t, type LanguagePreference } from '../../lib/i18n';
 
 export default function App() {
   const [idols, setIdols] = useState<Idol[]>([]);
@@ -21,6 +21,7 @@ export default function App() {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupMessage, setBackupMessage] = useState('');
+  const [language, setLanguage] = useState<LanguagePreference>(() => getLanguagePreference());
   useEffect(() => {
     void browser.runtime.sendMessage({ type: 'CHECK_SCHEDULE' }).catch(() => undefined);
     void Promise.all([getIdols(), getRegistrationDraft()]).then(([savedIdols, draft]) => { setIdols(savedIdols); setRegistrationDraft(draft); }).finally(() => setLoading(false));
@@ -120,6 +121,7 @@ export default function App() {
     {reorderMode && <p className="mb-2 text-center text-[11px] text-slate-400">{t('reorderHelp')}</p>}
     <div className="space-y-2">{idols.map((idol, index) => <div key={idol.id} draggable={reorderMode} onDragStart={() => setDraggedId(idol.id)} onDragEnd={() => { setDraggedId(null); setDragOverId(null); }} onDragOver={(event) => { if (!reorderMode) return; event.preventDefault(); setDragOverId(idol.id); }} onDrop={(event) => { event.preventDefault(); void dropOn(idol.id); }} className={`rounded-2xl transition ${draggedId === idol.id ? 'opacity-40' : ''} ${dragOverId === idol.id && draggedId !== idol.id ? 'ring-2 ring-rose-300 ring-offset-2' : ''}`}><IdolCard idol={idol} reorderMode={reorderMode} canMoveUp={index > 0} canMoveDown={index < idols.length - 1} onMoveUp={() => void moveId(idol.id, index - 1)} onMoveDown={() => void moveId(idol.id, index + 1)} onEdit={() => setEditing(idol)} onDelete={() => void remove(idol)} onWrite={() => void browser.tabs.create({ url: idol.postUrl })} onToggle={() => void toggleNotifications(idol)} /></div>)}</div>
     {idols.length >= 10 && <p className="mt-3 text-center text-xs text-slate-400">{t('maxIdols')}</p>}
+    <label className="mt-5 flex items-center justify-between border-t border-rose-100 pt-4 text-xs font-semibold text-slate-500"><span>{t('language')}</span><select value={language} onChange={(event) => { const value = event.target.value as LanguagePreference; setLanguage(value); void setLanguagePreference(value).then(() => location.reload()); }} className="rounded-lg border border-rose-100 bg-white px-2 py-1.5 text-xs outline-none"><option value="browser">{t('browserLanguage')}</option><option value="ko">{t('korean')}</option><option value="en">{t('english')}</option></select></label>
     <section className="mt-5 border-t border-rose-100 pt-4"><div className="flex gap-2"><button disabled={backupBusy} onClick={() => void exportBackup()} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-rose-50 py-2.5 text-xs font-semibold text-rose-500 disabled:opacity-50"><Download size={15} /> {t('backupSave')}</button><label className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2.5 text-xs font-semibold text-slate-500 ${backupBusy ? 'pointer-events-none opacity-50' : ''}`}><Upload size={15} /> {t('backupRestore')}<input type="file" accept="application/json,.json" className="hidden" onChange={(event) => { void importBackup(event.target.files?.[0]); event.target.value = ''; }} /></label></div>{backupMessage && <p className="mt-2 text-center text-[11px] text-slate-500">{backupMessage}</p>}<p className="mt-2 text-center text-[10px] text-slate-400">{t('backupHelp')}</p></section>
   </main>;
 }

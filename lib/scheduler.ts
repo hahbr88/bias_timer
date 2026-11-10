@@ -3,7 +3,7 @@ import { getUpcomingEvents, isNotificationWithinDeliveryWindow } from './time';
 import { getIdols, getSettings } from './storage';
 import { getPhotoDataUrl } from './images';
 import type { AlarmType, FavoriteEvent } from '../types/idol';
-import { t } from './i18n';
+import { initializeI18n, t } from './i18n';
 
 const PREFIX = 'bias-timer:';
 export const MAINTENANCE_ALARM_NAME = `${PREFIX}maintenance`;
@@ -43,6 +43,7 @@ export function parseAlarm(name: string): { type: AlarmType; at: number } | null
 }
 
 export async function showAlarmNotification(name: string) {
+  await initializeI18n();
   const parsed = parseAlarm(name);
   if (!parsed) return;
   if (!isNotificationWithinDeliveryWindow(parsed.at)) return;
