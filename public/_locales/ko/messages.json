@@ -1,0 +1,22 @@
+{
+  "extName":{"message":"최애시 타이머"},
+  "extDescription":{"message":"내 최애의 특별한 시간을 놓치지 않도록 알려드려요."},
+  "localeCode":{"message":"ko"},
+  "back":{"message":"돌아가기"}, "registerTitle":{"message":"최애 등록"}, "editTitle":{"message":"최애 수정"},
+  "name":{"message":"이름"}, "nickname":{"message":"애칭·별명"}, "nicknamePlaceholder":{"message":"예: 채채, 꾸라, 허댕, 즈뭉, 만채"}, "groupName":{"message":"그룹명"},
+  "postLink":{"message":"글 쓰러 갈 링크"}, "postLinkHelp":{"message":"알림이나 ‘글 쓰기’를 누르면 새 탭으로 열려요."}, "birthday":{"message":"생일"},
+  "month":{"message":"$1월"}, "dateMonthDay":{"message":"$1월 $2일"}, "yearIgnored":{"message":"연도는 최애시 계산에 사용하지 않아요."},
+  "photoPreview":{"message":"프로필 사진 미리보기"}, "photoSaving":{"message":"사진 저장 중…"}, "changePhoto":{"message":"사진 변경하기"}, "selectPhoto":{"message":"프로필 사진 선택"},
+  "calculatedTime":{"message":"자동 계산된 최애시"}, "earlyNotification":{"message":"미리 알림"}, "exactNotification":{"message":"정각 알림"},
+  "minutes":{"message":"$1분"}, "minutesBefore":{"message":"$1분 전"}, "draftHelp":{"message":"작성 내용은 팝업을 닫아도 임시 저장됩니다."},
+  "saving":{"message":"저장 중…"}, "saveEdit":{"message":"수정 완료"}, "register":{"message":"등록하기"},
+  "requiredName":{"message":"이름을 입력해 주세요."}, "invalidPostUrl":{"message":"글 쓰기 링크에 올바른 웹 주소를 입력해 주세요."}, "invalidDay":{"message":"$1월은 $2일까지 입력할 수 있어요."}, "saveFailed":{"message":"저장하지 못했습니다."}, "photoSaveFailed":{"message":"사진을 저장하지 못했습니다."},
+  "cropTitle":{"message":"프로필 사진 편집"}, "cropHelp":{"message":"사진을 움직여 원하는 영역을 맞춰주세요."}, "closeCrop":{"message":"사진 편집 닫기"}, "zoom":{"message":"사진 확대 비율"}, "zoomOut":{"message":"축소"}, "zoomIn":{"message":"확대"}, "reset":{"message":"초기화"}, "applying":{"message":"적용 중…"}, "apply":{"message":"적용하기"},
+  "hours":{"message":"시간"}, "minuteUnit":{"message":"분"}, "seconds":{"message":"초"}, "solo":{"message":"솔로"}, "earlyOff":{"message":"미리 알림 꺼짐"},
+  "toggleNotification":{"message":"알림 전환"}, "edit":{"message":"수정"}, "delete":{"message":"삭제"}, "writePost":{"message":"글 쓰러 가기"}, "moveUp":{"message":"위로 이동"}, "moveDown":{"message":"아래로 이동"},
+  "appTagline":{"message":"당신의 최애를 위한 특별한 순간"}, "nextTime":{"message":"NEXT 최애시"}, "firstIdol":{"message":"첫 최애를 등록해 보세요"}, "firstIdolHelp":{"message":"생일로 계산한 특별한 시간을 알려드릴게요."}, "registeredIdols":{"message":"등록한 최애"},
+  "done":{"message":"완료"}, "reorder":{"message":"순서 변경"}, "continueDraft":{"message":"계속 작성"}, "add":{"message":"등록"}, "reorderHelp":{"message":"카드를 드래그하거나 화살표로 순서를 바꿔보세요."}, "maxIdols":{"message":"최대 10명까지 등록할 수 있어요."},
+  "backupSave":{"message":"백업 저장"}, "backupRestore":{"message":"백업 복원"}, "backupHelp":{"message":"최애 정보와 프로필 사진이 JSON 파일에 함께 저장됩니다."}, "backupSaved":{"message":"백업 파일을 저장했습니다."}, "backupCreateFailed":{"message":"백업 파일을 만들지 못했습니다."}, "restoreConfirm":{"message":"현재 최애 정보와 프로필 사진을 백업 파일의 내용으로 교체할까요?"}, "backupTooLarge":{"message":"백업 파일은 25MB 이하만 복원할 수 있습니다."}, "restoredCount":{"message":"$1명의 최애를 복원했습니다."}, "restoreFailed":{"message":"백업을 복원하지 못했습니다."}, "deleteConfirm":{"message":"$1님을 삭제할까요?"},
+  "preNotificationTitle":{"message":"$1시 $2분 전입니다"}, "preNotificationMixedTitle":{"message":"$1의 최애시가 곧 시작됩니다"}, "exactNotificationTitle":{"message":"$1시!"}, "preNotificationItem":{"message":"$1시 $2분 전"}, "preNotificationBody":{"message":"곧 최애시가 찾아와요."}, "exactNotificationBody":{"message":"지금이 바로 최애시예요!"},
+  "invalidBackupImage":{"message":"지원하지 않는 프로필 사진 형식입니다."}, "backupImageTooLarge":{"message":"프로필 사진의 용량이 너무 큽니다."}, "invalidBackupJson":{"message":"올바른 JSON 백업 파일이 아닙니다."}, "invalidBackupApp":{"message":"최애시 타이머 백업 파일이 아닙니다."}, "unsupportedBackupVersion":{"message":"현재 버전에서 지원하지 않는 백업 파일입니다."}, "loading":{"message":"불러오는 중…"}
+}

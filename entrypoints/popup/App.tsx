@@ -9,6 +9,7 @@ import { clearRegistrationDraft, getIdols, getRegistrationDraft, notifyDataChang
 import { getFavoriteTimes, getNextFavorite } from '../../lib/time';
 import type { Idol, RegistrationDraft } from '../../types/idol';
 import { createBackup, restoreBackup } from '../../lib/backup';
+import { t } from '../../lib/i18n';
 
 export default function App() {
   const [idols, setIdols] = useState<Idol[]>([]);
@@ -27,7 +28,7 @@ export default function App() {
   const next = useMemo(() => getNextFavorite(idols), [idols]);
   async function persist(nextIdols: Idol[]) { setIdols(nextIdols); await saveIdols(nextIdols); await notifyDataChanged(); }
   async function save(draft: IdolDraft) {
-    if (editing === 'new' && idols.length >= 10) throw new Error('최애는 최대 10명까지 등록할 수 있어요.');
+    if (editing === 'new' && idols.length >= 10) throw new Error(t('maxIdols'));
     const now = Date.now();
     let photoId = editing !== 'new' ? editing?.photoId ?? null : draft.photoId ?? null;
     if (draft.photo) { const previous = photoId; photoId = await savePhoto(draft.photo); await deletePhoto(previous); }
@@ -38,7 +39,7 @@ export default function App() {
     setEditing(null);
   }
   async function remove(idol: Idol) {
-    if (!confirm(`${idol.name}님을 삭제할까요?`)) return;
+    if (!confirm(t('deleteConfirm', idol.name))) return;
     await persist(idols.filter((item) => item.id !== idol.id)); await deletePhoto(idol.photoId);
   }
   async function toggleNotifications(idol: Idol) {
@@ -81,21 +82,21 @@ export default function App() {
       anchor.download = `bias-timer-backup-${new Date().toISOString().slice(0, 10)}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
-      setBackupMessage('백업 파일을 저장했습니다.');
-    } catch (error) { setBackupMessage(error instanceof Error ? error.message : '백업 파일을 만들지 못했습니다.'); }
+      setBackupMessage(t('backupSaved'));
+    } catch (error) { setBackupMessage(error instanceof Error ? error.message : t('backupCreateFailed')); }
     finally { setBackupBusy(false); }
   }
   async function importBackup(file?: File) {
     if (!file) return;
-    if (!confirm('현재 최애 정보와 프로필 사진을 백업 파일의 내용으로 교체할까요?')) return;
+    if (!confirm(t('restoreConfirm'))) return;
     setBackupBusy(true); setBackupMessage('');
     try {
-      if (file.size > 25 * 1024 * 1024) throw new Error('백업 파일은 25MB 이하만 복원할 수 있습니다.');
+      if (file.size > 25 * 1024 * 1024) throw new Error(t('backupTooLarge'));
       const restoredIdols = await restoreBackup(await file.text());
       setIdols(restoredIdols);
       setRegistrationDraft(null);
-      setBackupMessage(`${restoredIdols.length}명의 최애를 복원했습니다.`);
-    } catch (error) { setBackupMessage(error instanceof Error ? error.message : '백업을 복원하지 못했습니다.'); }
+      setBackupMessage(t('restoredCount', String(restoredIdols.length)));
+    } catch (error) { setBackupMessage(error instanceof Error ? error.message : t('restoreFailed')); }
     finally { setBackupBusy(false); }
   }
   async function cancelForm() {
@@ -110,15 +111,15 @@ export default function App() {
     setRegistrationDraft(draft);
     void saveRegistrationDraft(draft);
   }, []);
-  if (loading) return <div className="grid h-[560px] place-items-center text-sm text-rose-400">불러오는 중…</div>;
+  if (loading) return <div className="grid h-[560px] place-items-center text-sm text-rose-400">{t('loading')}</div>;
   if (editing) return <IdolForm initial={editing === 'new' ? undefined : editing} initialDraft={editing === 'new' ? registrationDraft : undefined} onDraftChange={editing === 'new' ? updateDraft : undefined} onCancel={() => void cancelForm()} onSave={save} />;
   return <main className="p-4">
-    <header className="mb-4 flex items-center justify-between"><div><div className="flex items-center gap-1.5 text-xl font-black"><Sparkles size={19} className="text-rose-400" /> 최애시 타이머</div><p className="mt-0.5 text-xs text-slate-400">당신의 최애를 위한 특별한 순간</p></div><div className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-400">{idols.length} / 10</div></header>
-    {next ? <section className="card mb-5 overflow-hidden p-4 text-center"><div className="text-[11px] font-bold tracking-[.18em] text-rose-400">NEXT 최애시</div><div className="mt-2 text-lg font-bold">{next.idols.map((idol) => idol.name).join(', ')}</div><div className="text-xs text-slate-400">{next.idols[0]?.groupName || '솔로'} · {getFavoriteTimes(next.idols[0]!.birthMonth, next.idols[0]!.birthDay).join(' / ')}</div><Countdown target={next.at} /></section> : <section className="card mb-5 p-7 text-center"><div className="text-sm font-semibold">첫 최애를 등록해 보세요</div><div className="mt-1 text-xs text-slate-400">생일로 계산한 특별한 시간을 알려드릴게요.</div></section>}
+    <header className="mb-4 flex items-center justify-between"><div><div className="flex items-center gap-1.5 text-xl font-black"><Sparkles size={19} className="text-rose-400" /> {t('extName')}</div><p className="mt-0.5 text-xs text-slate-400">{t('appTagline')}</p></div><div className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-400">{idols.length} / 10</div></header>
+    {next ? <section className="card mb-5 overflow-hidden p-4 text-center"><div className="text-[11px] font-bold tracking-[.18em] text-rose-400">{t('nextTime')}</div><div className="mt-2 text-lg font-bold">{next.idols.map((idol) => idol.name).join(', ')}</div><div className="text-xs text-slate-400">{next.idols[0]?.groupName || t('solo')} · {getFavoriteTimes(next.idols[0]!.birthMonth, next.idols[0]!.birthDay).join(' / ')}</div><Countdown target={next.at} /></section> : <section className="card mb-5 p-7 text-center"><div className="text-sm font-semibold">{t('firstIdol')}</div><div className="mt-1 text-xs text-slate-400">{t('firstIdolHelp')}</div></section>}
     <div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-bold">등록한 최애</h2><div className="flex gap-1.5">{idols.length > 1 && <button onClick={() => { setReorderMode((value) => !value); setDraggedId(null); setDragOverId(null); }} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${reorderMode ? 'bg-slate-700 text-white' : 'bg-rose-50 text-rose-400'}`}>{reorderMode ? <Check size={14} /> : <ListRestart size={14} />}{reorderMode ? '완료' : '순서 변경'}</button>}<button disabled={idols.length >= 10 || reorderMode} onClick={() => setEditing('new')} className="flex items-center gap-1 rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white disabled:bg-slate-200"><Plus size={14} /> {registrationDraft ? '계속 작성' : '등록'}</button></div></div>
-    {reorderMode && <p className="mb-2 text-center text-[11px] text-slate-400">카드를 드래그하거나 화살표로 순서를 바꿔보세요.</p>}
+    {reorderMode && <p className="mb-2 text-center text-[11px] text-slate-400">{t('reorderHelp')}</p>}
     <div className="space-y-2">{idols.map((idol, index) => <div key={idol.id} draggable={reorderMode} onDragStart={() => setDraggedId(idol.id)} onDragEnd={() => { setDraggedId(null); setDragOverId(null); }} onDragOver={(event) => { if (!reorderMode) return; event.preventDefault(); setDragOverId(idol.id); }} onDrop={(event) => { event.preventDefault(); void dropOn(idol.id); }} className={`rounded-2xl transition ${draggedId === idol.id ? 'opacity-40' : ''} ${dragOverId === idol.id && draggedId !== idol.id ? 'ring-2 ring-rose-300 ring-offset-2' : ''}`}><IdolCard idol={idol} reorderMode={reorderMode} canMoveUp={index > 0} canMoveDown={index < idols.length - 1} onMoveUp={() => void moveId(idol.id, index - 1)} onMoveDown={() => void moveId(idol.id, index + 1)} onEdit={() => setEditing(idol)} onDelete={() => void remove(idol)} onWrite={() => void browser.tabs.create({ url: idol.postUrl })} onToggle={() => void toggleNotifications(idol)} /></div>)}</div>
-    {idols.length >= 10 && <p className="mt-3 text-center text-xs text-slate-400">최대 10명까지 등록할 수 있어요.</p>}
-    <section className="mt-5 border-t border-rose-100 pt-4"><div className="flex gap-2"><button disabled={backupBusy} onClick={() => void exportBackup()} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-rose-50 py-2.5 text-xs font-semibold text-rose-500 disabled:opacity-50"><Download size={15} /> 백업 저장</button><label className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2.5 text-xs font-semibold text-slate-500 ${backupBusy ? 'pointer-events-none opacity-50' : ''}`}><Upload size={15} /> 백업 복원<input type="file" accept="application/json,.json" className="hidden" onChange={(event) => { void importBackup(event.target.files?.[0]); event.target.value = ''; }} /></label></div>{backupMessage && <p className="mt-2 text-center text-[11px] text-slate-500">{backupMessage}</p>}<p className="mt-2 text-center text-[10px] text-slate-400">최애 정보와 프로필 사진이 JSON 파일에 함께 저장됩니다.</p></section>
+    {idols.length >= 10 && <p className="mt-3 text-center text-xs text-slate-400">{t('maxIdols')}</p>}
+    <section className="mt-5 border-t border-rose-100 pt-4"><div className="flex gap-2"><button disabled={backupBusy} onClick={() => void exportBackup()} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-rose-50 py-2.5 text-xs font-semibold text-rose-500 disabled:opacity-50"><Download size={15} /> {t('backupSave')}</button><label className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2.5 text-xs font-semibold text-slate-500 ${backupBusy ? 'pointer-events-none opacity-50' : ''}`}><Upload size={15} /> {t('backupRestore')}<input type="file" accept="application/json,.json" className="hidden" onChange={(event) => { void importBackup(event.target.files?.[0]); event.target.value = ''; }} /></label></div>{backupMessage && <p className="mt-2 text-center text-[11px] text-slate-500">{backupMessage}</p>}<p className="mt-2 text-center text-[10px] text-slate-400">{t('backupHelp')}</p></section>
   </main>;
 }

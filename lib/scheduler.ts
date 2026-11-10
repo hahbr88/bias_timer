@@ -3,6 +3,7 @@ import { getUpcomingEvents, isNotificationWithinDeliveryWindow } from './time';
 import { getIdols, getSettings } from './storage';
 import { getPhotoDataUrl } from './images';
 import type { AlarmType, FavoriteEvent } from '../types/idol';
+import { t } from './i18n';
 
 const PREFIX = 'bias-timer:';
 export const MAINTENANCE_ALARM_NAME = `${PREFIX}maintenance`;
@@ -53,11 +54,11 @@ export async function showAlarmNotification(name: string) {
   const groups = [...new Set(event.idols.map((idol) => idol.groupName).filter(Boolean))].join(', ');
   const leads = [...new Set(event.idols.map((idol) => idol.notificationLeadMinutes ?? settings.notificationLeadMinutes))];
   const title = parsed.type === 'pre'
-    ? leads.length === 1 ? `${names}시 ${leads[0]}분 전입니다` : `${names}의 최애시가 곧 시작됩니다`
-    : `${names}시!`;
+    ? leads.length === 1 ? t('preNotificationTitle', [names, String(leads[0])]) : t('preNotificationMixedTitle', names)
+    : t('exactNotificationTitle', names);
   const message = parsed.type === 'pre' && leads.length > 1
-    ? event.idols.map((idol) => `${idol.nickname || idol.name}시 ${(idol.notificationLeadMinutes ?? settings.notificationLeadMinutes)}분 전`).join(' · ')
-    : groups || (parsed.type === 'pre' ? '곧 최애시가 찾아와요.' : '지금이 바로 최애시예요!');
+    ? event.idols.map((idol) => t('preNotificationItem', [idol.nickname || idol.name, String(idol.notificationLeadMinutes ?? settings.notificationLeadMinutes)])).join(' · ')
+    : groups || (parsed.type === 'pre' ? t('preNotificationBody') : t('exactNotificationBody'));
   const onlyIdol = event.idols.length === 1 ? event.idols[0] : undefined;
   let profileIcon: string | null = null;
   if (onlyIdol?.photoId) {

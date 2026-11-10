@@ -22,15 +22,15 @@ describe('backup format', () => {
   });
 
   it('다른 앱과 미래 버전 백업을 거부한다', () => {
-    expect(() => parseBackupText(backup({ app: 'other' }))).toThrow('최애시 타이머 백업 파일이 아닙니다.');
-    expect(() => parseBackupText(backup({ version: BACKUP_VERSION + 1 }))).toThrow('현재 버전에서 지원하지 않는 백업 파일입니다.');
+    expect(() => parseBackupText(backup({ app: 'other' }))).toThrow('invalidBackupApp');
+    expect(() => parseBackupText(backup({ version: BACKUP_VERSION + 1 }))).toThrow('unsupportedBackupVersion');
   });
 
   it('이미지가 아닌 데이터 URL을 거부한다', () => {
-    expect(() => parseBackupText(backup({ idols: [{ name: '테스트', photoId: 'x' }], photos: { x: 'data:text/plain;base64,AA==' } }))).toThrow('지원하지 않는 프로필 사진 형식입니다.');
+    expect(() => parseBackupText(backup({ idols: [{ name: '테스트', photoId: 'x' }], photos: { x: 'data:text/plain;base64,AA==' } }))).toThrow('invalidBackupImage');
   });
 
   it('잘못된 JSON을 명확한 오류로 반환한다', () => {
-    expect(() => parseBackupText('{broken')).toThrow('올바른 JSON 백업 파일이 아닙니다.');
+    expect(() => parseBackupText('{broken')).toThrow('invalidBackupJson');
   });
 });

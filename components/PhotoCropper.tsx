@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RotateCcw, X } from 'lucide-react';
+import { t } from '../lib/i18n';
 
 const FRAME_SIZE = 300;
 
@@ -69,7 +70,7 @@ export function PhotoCropper({ file, onCancel, onApply }: { file: File; onCancel
   }
 
   return <div className="fixed inset-0 z-50 flex flex-col bg-white p-4">
-    <div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold">프로필 사진 편집</h2><p className="text-xs text-slate-400">사진을 움직여 원하는 영역을 맞춰주세요.</p></div><button type="button" onClick={onCancel} className="rounded-lg p-2 text-slate-400 hover:bg-slate-50" aria-label="사진 편집 닫기"><X size={20} /></button></div>
+    <div className="mb-4 flex items-center justify-between"><div><h2 className="text-lg font-bold">{t('cropTitle')}</h2><p className="text-xs text-slate-400">{t('cropHelp')}</p></div><button type="button" onClick={onCancel} className="rounded-lg p-2 text-slate-400 hover:bg-slate-50" aria-label={t('closeCrop')}><X size={20} /></button></div>
     <div ref={frameRef} className="mx-auto overflow-hidden rounded-2xl bg-slate-100 shadow-inner touch-none" style={{ width: FRAME_SIZE, height: FRAME_SIZE }}
       onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); dragRef.current = { pointer: { x: event.clientX, y: event.clientY }, offset }; }}
       onPointerMove={(event) => { const drag = dragRef.current; if (!drag) return; setOffset(clamp({ x: drag.offset.x + event.clientX - drag.pointer.x, y: drag.offset.y + event.clientY - drag.pointer.y })); }}
@@ -80,9 +81,9 @@ export function PhotoCropper({ file, onCancel, onApply }: { file: File; onCancel
       </div>
     </div>
     <div className="mt-5 rounded-2xl border border-rose-100 p-4">
-      <div className="mb-2 flex items-center justify-between text-xs text-slate-400"><span>축소</span><span className="font-semibold text-rose-500">{Math.round(zoom * 100)}%</span><span>확대</span></div>
-      <input aria-label="사진 확대 비율" className="w-full accent-rose-500" type="range" min="1" max="3" step="0.01" value={zoom} onChange={(event) => changeZoom(Number(event.target.value))} />
+      <div className="mb-2 flex items-center justify-between text-xs text-slate-400"><span>{t('zoomOut')}</span><span className="font-semibold text-rose-500">{Math.round(zoom * 100)}%</span><span>{t('zoomIn')}</span></div>
+      <input aria-label={t('zoom')} className="w-full accent-rose-500" type="range" min="1" max="3" step="0.01" value={zoom} onChange={(event) => changeZoom(Number(event.target.value))} />
     </div>
-    <div className="mt-auto flex gap-2 pt-4"><button type="button" onClick={reset} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-3 text-sm font-semibold text-slate-500"><RotateCcw size={16} /> 초기화</button><button type="button" disabled={applying} onClick={() => void apply()} className="flex-[2] rounded-xl bg-rose-500 py-3 text-sm font-semibold text-white disabled:opacity-50">{applying ? '적용 중…' : '적용하기'}</button></div>
+    <div className="mt-auto flex gap-2 pt-4"><button type="button" onClick={reset} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-3 text-sm font-semibold text-slate-500"><RotateCcw size={16} /> {t('reset')}</button><button type="button" disabled={applying} onClick={() => void apply()} className="flex-[2] rounded-xl bg-rose-500 py-3 text-sm font-semibold text-white disabled:opacity-50">{applying ? t('applying') : t('apply')}</button></div>
   </div>;
 }
