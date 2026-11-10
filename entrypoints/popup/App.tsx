@@ -20,7 +20,10 @@ export default function App() {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupMessage, setBackupMessage] = useState('');
-  useEffect(() => { void Promise.all([getIdols(), getRegistrationDraft()]).then(([savedIdols, draft]) => { setIdols(savedIdols); setRegistrationDraft(draft); }).finally(() => setLoading(false)); }, []);
+  useEffect(() => {
+    void browser.runtime.sendMessage({ type: 'CHECK_SCHEDULE' }).catch(() => undefined);
+    void Promise.all([getIdols(), getRegistrationDraft()]).then(([savedIdols, draft]) => { setIdols(savedIdols); setRegistrationDraft(draft); }).finally(() => setLoading(false));
+  }, []);
   const next = useMemo(() => getNextFavorite(idols), [idols]);
   async function persist(nextIdols: Idol[]) { setIdols(nextIdols); await saveIdols(nextIdols); await notifyDataChanged(); }
   async function save(draft: IdolDraft) {

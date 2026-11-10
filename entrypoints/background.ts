@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import { openNotificationLink, scheduleNextAlarm, showAlarmNotification } from '../lib/scheduler';
+import { MAINTENANCE_ALARM_NAME, openNotificationLink, scheduleNextAlarm, showAlarmNotification } from '../lib/scheduler';
 
 export default defineBackground(() => {
   async function rescheduleSafely() {
@@ -13,11 +13,12 @@ export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(() => void rescheduleSafely());
   browser.runtime.onStartup.addListener(() => void rescheduleSafely());
   browser.runtime.onMessage.addListener((message: unknown) => {
-    if ((message as { type?: string })?.type === 'DATA_CHANGED') void rescheduleSafely();
+    const type = (message as { type?: string })?.type;
+    if (type === 'DATA_CHANGED' || type === 'CHECK_SCHEDULE') void rescheduleSafely();
   });
   browser.alarms.onAlarm.addListener(async (alarm) => {
     try {
-      await showAlarmNotification(alarm.name);
+      if (alarm.name !== MAINTENANCE_ALARM_NAME) await showAlarmNotification(alarm.name);
     } catch (error) {
       console.error('최애시 알림을 표시하지 못했습니다.', error);
     } finally {
