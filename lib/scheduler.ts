@@ -44,7 +44,14 @@ export async function showAlarmNotification(name: string) {
     ? event.idols.map((idol) => `${idol.nickname || idol.name}시 ${(idol.notificationLeadMinutes ?? settings.notificationLeadMinutes)}분 전`).join(' · ')
     : groups || (parsed.type === 'pre' ? '곧 최애시가 찾아와요.' : '지금이 바로 최애시예요!');
   const onlyIdol = event.idols.length === 1 ? event.idols[0] : undefined;
-  const profileIcon = onlyIdol?.photoId ? await getPhotoDataUrl(onlyIdol.photoId) : null;
+  let profileIcon: string | null = null;
+  if (onlyIdol?.photoId) {
+    try {
+      profileIcon = await getPhotoDataUrl(onlyIdol.photoId);
+    } catch (error) {
+      console.warn('프로필 사진을 알림 아이콘으로 불러오지 못했습니다.', error);
+    }
+  }
   await browser.notifications.create(`${name}:${Date.now()}`, {
     type: 'basic',
     iconUrl: profileIcon ?? browser.runtime.getURL('/icon/128.png'),
