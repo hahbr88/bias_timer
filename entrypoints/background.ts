@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import { scheduleNextAlarm, showAlarmNotification } from '../lib/scheduler';
+import { openNotificationLink, scheduleNextAlarm, showAlarmNotification } from '../lib/scheduler';
 
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(() => void scheduleNextAlarm());
@@ -10,6 +10,10 @@ export default defineBackground(() => {
   browser.alarms.onAlarm.addListener(async (alarm) => {
     await showAlarmNotification(alarm.name);
     await scheduleNextAlarm();
+  });
+  browser.notifications.onClicked.addListener((notificationId) => {
+    void openNotificationLink(notificationId);
+    void browser.notifications.clear(notificationId);
   });
   void scheduleNextAlarm();
 });

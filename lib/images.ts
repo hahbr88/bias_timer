@@ -57,6 +57,25 @@ export async function getPhoto(id: string): Promise<string | null> {
   return blob ? URL.createObjectURL(blob) : null;
 }
 
+export async function getPhotoDataUrl(id: string): Promise<string | null> {
+  const db = await openDb();
+  const blob = await new Promise<Blob | undefined>((resolve, reject) => {
+    const request = db.transaction(STORE_NAME).objectStore(STORE_NAME).get(id);
+    request.onsuccess = () => resolve(request.result as Blob | undefined);
+    request.onerror = () => reject(request.error);
+  });
+  db.close();
+  if (!blob) return null;
+
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return `data:${blob.type || 'image/webp'};base64,${btoa(binary)}`;
+}
+
 export async function deletePhoto(id: string | null) {
   if (!id) return;
   const db = await openDb();

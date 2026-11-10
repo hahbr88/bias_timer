@@ -25,10 +25,13 @@ function occurrences(idol: Idol, from: Date, leadMinutes: number) {
   return result;
 }
 
-export function getUpcomingEvents(idols: Idol[], from = new Date(), leadMinutes = 5): FavoriteEvent[] {
+export function getUpcomingEvents(idols: Idol[], from = new Date(), fallbackLeadMinutes = 5): FavoriteEvent[] {
   const grouped = new Map<string, FavoriteEvent>();
   for (const idol of idols.filter((item) => item.notificationEnabled)) {
+    const leadMinutes = idol.notificationLeadMinutes ?? fallbackLeadMinutes;
     for (const item of occurrences(idol, from, leadMinutes)) {
+      if (item.type === 'pre' && idol.preNotificationEnabled === false) continue;
+      if (item.type === 'exact' && idol.exactNotificationEnabled === false) continue;
       if (item.at.getTime() < from.getTime()) continue;
       const key = `${item.type}:${item.at.getTime()}`;
       const existing = grouped.get(key);

@@ -1,9 +1,11 @@
 import { browser } from 'wxt/browser';
 import { getUpcomingEvents } from './time';
 import { getIdols, getSettings } from './storage';
+import { getPhotoDataUrl } from './images';
 import type { AlarmType, FavoriteEvent } from '../types/idol';
 
 const PREFIX = 'bias-timer:';
+const MAX_NOTIFICATION_DELAY_MS = 60_000;
 
 export function alarmName(event: FavoriteEvent) {
   return `${PREFIX}${event.type}:${event.at.getTime()}`;
@@ -27,14 +29,36 @@ export function parseAlarm(name: string): { type: AlarmType; at: number } | null
 export async function showAlarmNotification(name: string) {
   const parsed = parseAlarm(name);
   if (!parsed) return;
+  if (Date.now() - parsed.at >= MAX_NOTIFICATION_DELAY_MS) return;
   const [idols, settings] = await Promise.all([getIdols(), getSettings()]);
   const event = getUpcomingEvents(idols, new Date(parsed.at - 1000), settings.notificationLeadMinutes)
     .find((item) => item.type === parsed.type && item.at.getTime() === parsed.at);
   if (!event) return;
-  const names = event.idols.map((idol) => idol.name).join(', ');
-  const title = parsed.type === 'pre' ? `${names} 최애시 5분 전!` : `${names} 최애시 💖`;
-  const message = parsed.type === 'pre' ? '곧 특별한 시간이 찾아와요.' : '지금이 바로 최애시예요!';
+  const names = event.idols.map((idol) => idol.nickname || idol.name).join(', ');
+  const groups = [...new Set(event.idols.map((idol) => idol.groupName).filter(Boolean))].join(', ');
+  const leads = [...new Set(event.idols.map((idol) => idol.notificationLeadMinutes ?? settings.notificationLeadMinutes))];
+  const title = parsed.type === 'pre'
+    ? leads.length === 1 ? `${names}시 ${leads[0]}분 전입니다` : `${names}의 최애시가 곧 시작됩니다`
+    : `${names}시!`;
+  const message = parsed.type === 'pre' && leads.length > 1
+    ? event.idols.map((idol) => `${idol.nickname || idol.name}시 ${(idol.notificationLeadMinutes ?? settings.notificationLeadMinutes)}분 전`).join(' · ')
+    : groups || (parsed.type === 'pre' ? '곧 최애시가 찾아와요.' : '지금이 바로 최애시예요!');
+  const onlyIdol = event.idols.length === 1 ? event.idols[0] : undefined;
+  const profileIcon = onlyIdol?.photoId ? await getPhotoDataUrl(onlyIdol.photoId) : null;
   await browser.notifications.create(`${name}:${Date.now()}`, {
-    type: 'basic', iconUrl: browser.runtime.getURL('/icon/128.svg'), title, message,
+    type: 'basic',
+    iconUrl: profileIcon ?? browser.runtime.getURL('/icon/128.png'),
+    title,
+    message,
   });
+}
+
+export async function openNotificationLink(notificationId: string) {
+  const parsed = parseAlarm(notificationId);
+  if (!parsed) return;
+  const [idols, settings] = await Promise.all([getIdols(), getSettings()]);
+  const event = getUpcomingEvents(idols, new Date(parsed.at - 1000), settings.notificationLeadMinutes)
+    .find((item) => item.type === parsed.type && item.at.getTime() === parsed.at);
+  const url = event?.idols.find((idol) => idol.postUrl)?.postUrl;
+  if (url && /^https?:\/\//i.test(url)) await browser.tabs.create({ url });
 }

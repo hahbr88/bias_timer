@@ -1,8 +1,9 @@
 import { browser } from 'wxt/browser';
-import type { AppSettings, Idol } from '../types/idol';
+import type { AppSettings, Idol, RegistrationDraft } from '../types/idol';
 
 const IDOLS_KEY = 'idols';
 const SETTINGS_KEY = 'settings';
+const DRAFT_KEY = 'registrationDraft';
 export const defaultSettings: AppSettings = {
   notificationLeadMinutes: 5,
   notificationsEnabled: true,
@@ -16,6 +17,19 @@ export async function getIdols(): Promise<Idol[]> {
 
 export async function saveIdols(idols: Idol[]) {
   await browser.storage.local.set({ [IDOLS_KEY]: idols });
+}
+
+export async function getRegistrationDraft(): Promise<RegistrationDraft | null> {
+  const data = await browser.storage.local.get(DRAFT_KEY);
+  return (data[DRAFT_KEY] as RegistrationDraft | undefined) ?? null;
+}
+
+export async function saveRegistrationDraft(draft: RegistrationDraft) {
+  await browser.storage.local.set({ [DRAFT_KEY]: draft });
+}
+
+export async function clearRegistrationDraft() {
+  await browser.storage.local.remove(DRAFT_KEY);
 }
 
 export async function getSettings(): Promise<AppSettings> {
