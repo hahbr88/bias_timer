@@ -86,3 +86,17 @@ export async function deletePhoto(id: string | null) {
   });
   db.close();
 }
+
+export async function replacePhotos(photos: Record<string, Blob>) {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    store.clear();
+    for (const [id, blob] of Object.entries(photos)) store.put(blob, id);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error ?? new Error('사진 복원을 취소했습니다.'));
+  });
+  db.close();
+}

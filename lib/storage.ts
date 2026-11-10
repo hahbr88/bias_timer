@@ -66,6 +66,11 @@ export async function getSettings(): Promise<AppSettings> {
   return { ...defaultSettings, ...(data[SETTINGS_KEY] as Partial<AppSettings> | undefined) };
 }
 
+export async function saveSettings(settings: AppSettings) {
+  await ensureStorageMigrated();
+  await browser.storage.local.set({ [SETTINGS_KEY]: settings });
+}
+
 export async function notifyDataChanged() {
   try { await browser.runtime.sendMessage({ type: 'DATA_CHANGED' }); } catch { /* background wakes later */ }
 }
