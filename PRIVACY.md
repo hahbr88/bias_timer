@@ -74,6 +74,8 @@
 
 기능 또는 정보 처리 방식이 변경되면 이 문서를 수정하고 시행일을 갱신합니다. 중요한 변경 사항은 저장소의 릴리스 안내 또는 확장 프로그램 배포 정보에 고지할 수 있습니다.
 
+확장 프로그램이 Chrome 웹 스토어 사용자 데이터 정책의 적용을 받는 정보를 사용하는 경우, 해당 정보의 사용은 제한적 사용 요건을 포함한 [Chrome 웹 스토어 사용자 데이터 정책](https://developer.chrome.com/docs/webstore/program-policies/policies#protecting-user-privacy)을 준수합니다.
+
 ## 10. 문의
 
 개인정보처리방침 또는 확장 프로그램에 관한 문의와 문제 제보는 다음 GitHub Issues에서 접수할 수 있습니다.
@@ -157,6 +159,8 @@ Information is kept in extension-specific storage within the Chrome profile. How
 ## 9. Changes to this policy
 
 This document and its effective date will be updated when features or information-handling practices change. Material changes may also be announced in repository release notes or Extension distribution information.
+
+The use of information received under the Chrome Web Store User Data Policy will comply with the [Chrome Web Store User Data Policy](https://developer.chrome.com/docs/webstore/program-policies/policies#protecting-user-privacy), including its Limited Use requirements.
 
 ## 10. Contact
 
