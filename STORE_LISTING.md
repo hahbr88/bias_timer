@@ -6,7 +6,7 @@
 
 - 제품명: `최애시 타이머`
 - 영문 제품명: `Bias Time Timer`
-- 추천 카테고리: `생산성(Productivity)`
+- 추천 카테고리: 생산성 분류의 `도구(Tools)`
 - 홈페이지: `https://github.com/hahbr88/bias_timer`
 - 지원 URL: `https://github.com/hahbr88/bias_timer/issues`
 - 개인정보처리방침: `https://github.com/hahbr88/bias_timer/blob/main/PRIVACY.md`
