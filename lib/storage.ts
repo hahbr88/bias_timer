@@ -35,13 +35,34 @@ export function ensureStorageMigrated() {
 
 export async function getIdols(): Promise<Idol[]> {
   await ensureStorageMigrated();
-  const data = await browser.storage.local.get(IDOLS_KEY);
-  return Array.isArray(data[IDOLS_KEY]) ? (data[IDOLS_KEY] as Idol[]) : [];
+  const [localData, syncData] = await Promise.all([
+    browser.storage.local.get(IDOLS_KEY),
+    browser.storage.sync.get(IDOLS_KEY),
+  ]);
+  const localIdols = Array.isArray(localData[IDOLS_KEY]) ? migrateIdols(localData[IDOLS_KEY]) : [];
+  if (!Array.isArray(syncData[IDOLS_KEY])) {
+    await browser.storage.sync.set({ [IDOLS_KEY]: withoutLocalPhotos(localIdols) });
+    return localIdols;
+  }
+  const localPhotoIds = new Map(localIdols.map((idol) => [idol.id, idol.photoId]));
+  const idols = migrateIdols(syncData[IDOLS_KEY]).map((idol) => ({
+    ...idol,
+    photoId: localPhotoIds.get(idol.id) ?? null,
+  }));
+  await browser.storage.local.set({ [IDOLS_KEY]: idols });
+  return idols;
 }
 
 export async function saveIdols(idols: Idol[]) {
   await ensureStorageMigrated();
-  await browser.storage.local.set({ [IDOLS_KEY]: idols });
+  await Promise.all([
+    browser.storage.local.set({ [IDOLS_KEY]: idols }),
+    browser.storage.sync.set({ [IDOLS_KEY]: withoutLocalPhotos(idols) }),
+  ]);
+}
+
+function withoutLocalPhotos(idols: Idol[]) {
+  return idols.map((idol) => ({ ...idol, photoId: null }));
 }
 
 export async function getRegistrationDraft(): Promise<RegistrationDraft | null> {
@@ -62,13 +83,26 @@ export async function clearRegistrationDraft() {
 
 export async function getSettings(): Promise<AppSettings> {
   await ensureStorageMigrated();
-  const data = await browser.storage.local.get(SETTINGS_KEY);
-  return { ...defaultSettings, ...(data[SETTINGS_KEY] as Partial<AppSettings> | undefined) };
+  const [localData, syncData] = await Promise.all([
+    browser.storage.local.get(SETTINGS_KEY),
+    browser.storage.sync.get(SETTINGS_KEY),
+  ]);
+  if (syncData[SETTINGS_KEY] === undefined) {
+    const settings = migrateSettings(localData[SETTINGS_KEY]);
+    await browser.storage.sync.set({ [SETTINGS_KEY]: settings });
+    return settings;
+  }
+  const settings = migrateSettings(syncData[SETTINGS_KEY]);
+  await browser.storage.local.set({ [SETTINGS_KEY]: settings });
+  return settings;
 }
 
 export async function saveSettings(settings: AppSettings) {
   await ensureStorageMigrated();
-  await browser.storage.local.set({ [SETTINGS_KEY]: settings });
+  await Promise.all([
+    browser.storage.local.set({ [SETTINGS_KEY]: settings }),
+    browser.storage.sync.set({ [SETTINGS_KEY]: settings }),
+  ]);
 }
 
 export async function notifyDataChanged() {

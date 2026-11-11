@@ -38,13 +38,14 @@
 • 정시 1분 동안 강조되는 현재 최애시 화면
 • 저장한 링크로 바로 이동하는 글쓰기 버튼
 • 여러 최애 등록과 드래그 앤 드롭 순서 변경
+• Chrome 동기화를 통한 최애 정보와 알림 설정 공유
 • 프로필 사진 정방형 자르기와 미리보기
 • 작성 중인 등록 내용 자동 임시 저장
 • 최애 정보와 프로필 사진의 JSON 백업 및 복원
 • 알림 권한과 다음 예약을 확인하는 알림 진단 기능
 • 한국어 및 영어 인터페이스
 
-최애 정보와 프로필 사진은 사용자의 Chrome 프로필에만 저장되며 개발자 서버로 전송되지 않습니다. 확장 프로그램을 제거하기 전 필요한 정보는 백업 기능으로 저장할 수 있습니다.
+최애 정보와 알림 설정은 Chrome 동기화가 켜진 동일 계정의 Chrome 사이에서 동기화될 수 있습니다. 프로필 사진은 각 기기에만 저장되며 개발자 서버로 전송되지 않습니다. 사진을 다른 기기로 옮기려면 백업·복원 기능을 이용할 수 있습니다.
 
 알림은 Chrome이 실행 중이거나 백그라운드에서 동작할 때 제공됩니다. 운영체제의 알림 설정, 집중 모드 및 Chrome 실행 상태에 따라 표시 시점이 달라질 수 있습니다.
 ```
@@ -76,13 +77,14 @@ Key features
 • A highlighted current-time card during the exact minute
 • Posting buttons that open user-saved links
 • Multiple favorites with drag-and-drop ordering
+• Favorite data and notification settings shared through Chrome Sync
 • Square profile photo cropping and preview
 • Automatic draft saving while adding a favorite
 • JSON backup and restore for favorite data and photos
 • Notification diagnostics for permission and schedule checks
 • Korean and English interfaces
 
-Favorite data and profile photos remain in the user's Chrome profile and are not sent to a developer-operated server. Users can export a backup before removing the extension.
+Favorite data and notification settings can sync across Chrome browsers on the same account when Chrome Sync is enabled. Profile photos remain on each device and are not sent to a developer-operated server. Photos can be moved through backup and restore.
 
 Notifications are available while Chrome is running or operating in the background. Delivery may vary depending on operating-system notification settings, focus modes, and Chrome's running state.
 ```
@@ -106,7 +108,7 @@ Calculates special times from birthdays entered by the user and provides countdo
 #### `storage`
 
 ```text
-최애의 이름, 애칭, 그룹명, 생일, 글쓰기 링크, 알림 설정, 언어 설정, 작성 중인 임시 정보와 알림 클릭 대상을 사용자의 Chrome 프로필에 로컬 저장하기 위해 사용합니다. 외부 서버로 전송하지 않습니다. 프로필 사진 원본 데이터는 확장 프로그램 전용 IndexedDB에 저장합니다.
+최애의 이름, 애칭, 그룹명, 생일, 글쓰기 링크와 알림 설정을 Chrome 동기화 저장소에 보관하고, 언어 설정, 작성 중인 임시 정보와 알림 클릭 대상은 로컬 저장소에 보관하기 위해 사용합니다. 프로필 사진은 확장 프로그램 전용 IndexedDB에 기기별로 저장하며 동기화하지 않습니다. 개발자 서버로는 전송하지 않습니다.
 ```
 
 #### `alarms`
@@ -126,7 +128,7 @@ Calculates special times from birthdays entered by the user and provides countdo
 #### `storage`
 
 ```text
-Stores favorite names, nicknames, group names, birthdays, posting links, notification settings, language preferences, drafts, and temporary notification click targets locally in the user's Chrome profile. This data is not sent to an external server. Profile photo data is stored in the Extension's IndexedDB database.
+Stores favorite names, nicknames, group names, birthdays, posting links, and notification settings in Chrome sync storage. Language preferences, drafts, and temporary notification click targets remain in local storage. Profile photos remain per-device in the Extension's IndexedDB database and are not synchronized or sent to a developer-operated server.
 ```
 
 #### `alarms`

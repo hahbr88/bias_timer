@@ -31,11 +31,12 @@
 
 ## 3. 저장 위치와 보관 기간
 
-- 최애 정보, 알림 설정, 언어 설정과 작성 중인 정보는 `chrome.storage.local`에 저장됩니다.
+- 최애 정보와 알림 설정은 `chrome.storage.sync`에 저장됩니다. 사용자가 Chrome 동기화를 활성화한 경우 같은 Google 계정의 Chrome 환경으로 동기화될 수 있습니다.
+- 언어 설정과 작성 중인 정보는 `chrome.storage.local`에 저장됩니다.
 - 프로필 사진은 확장 프로그램 전용 IndexedDB에 저장됩니다.
 - 알림 클릭 시 정확한 URL을 열기 위해 알림 식별자와 등록 URL을 `chrome.storage.local`에 임시 저장합니다. 이 정보는 링크를 정상적으로 연 뒤 삭제되며, 열지 않은 경우에도 최대 7일 또는 최근 50개까지만 보관됩니다.
 - 알림 예약 정보는 Chrome의 `alarms` 기능으로 관리됩니다.
-- 위 정보는 Chrome 동기화 저장소에 저장되지 않으며 다른 기기로 자동 동기화되지 않습니다.
+- 프로필 사진, 작성 중인 정보와 알림 클릭용 임시 URL은 동기화되지 않으며 해당 기기에만 저장됩니다. 다른 기기의 프로필 사진은 백업·복원 기능으로 직접 이전해야 합니다.
 - 확장 프로그램은 자체 외부 서버나 데이터베이스를 운영하지 않습니다.
 
 정보는 사용자가 해당 항목을 삭제하거나 확장 프로그램을 제거할 때까지 로컬에 남을 수 있습니다. Chrome 또는 운영체제의 동작에 따라 확장 프로그램 제거 시 로컬 데이터가 삭제될 수 있으므로, 필요한 경우 제거 전에 백업 기능을 이용해야 합니다.
@@ -117,11 +118,12 @@ Information is used only to:
 
 ## 3. Storage and retention
 
-- Favorite data, notification settings, language preferences, and drafts are stored in `chrome.storage.local`.
+- Favorite data and notification settings are stored in `chrome.storage.sync`. When the user enables Chrome Sync, this data may synchronize across Chrome environments signed in to the same Google account.
+- Language preferences and drafts are stored in `chrome.storage.local`.
 - Profile photos are stored in the Extension's IndexedDB database.
 - To reliably open the correct URL after a notification click, the Extension temporarily stores a notification identifier and its user-provided URL in `chrome.storage.local`. It is deleted after the link opens successfully and is otherwise retained for no longer than seven days or the most recent 50 entries.
 - Notification schedules are managed through Chrome's `alarms` API.
-- This information is not stored in Chrome sync storage and is not automatically synchronized to other devices.
+- Profile photos, drafts, and temporary notification click URLs are not synchronized and remain on the device. Profile photos must be moved to another device manually through backup and restore.
 - The Extension does not operate an external server or database.
 
 Information may remain locally until the user deletes the relevant item or removes the Extension. Chrome or the operating system may delete local data when the Extension is removed. Users should create a backup before removal if they wish to retain their data.

@@ -39,6 +39,15 @@ export default function App() {
     void Promise.all([getIdols(), getRegistrationDraft()]).then(([savedIdols, draft]) => { setIdols(savedIdols); setRegistrationDraft(draft); }).finally(() => setLoading(false));
   }, []);
   useEffect(() => {
+    const handleStorageChange = (changes: Record<string, unknown>, areaName: string) => {
+      if (areaName === 'sync' && ('idols' in changes || 'settings' in changes)) {
+        void getIdols().then(setIdols).catch((error) => console.error('동기화된 최애 정보를 불러오지 못했습니다.', error));
+      }
+    };
+    browser.storage.onChanged.addListener(handleStorageChange);
+    return () => browser.storage.onChanged.removeListener(handleStorageChange);
+  }, []);
+  useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
@@ -168,6 +177,7 @@ export default function App() {
     <div className="space-y-2">{idols.map((idol, index) => <div key={idol.id} draggable={reorderMode} onDragStart={() => setDraggedId(idol.id)} onDragEnd={() => { setDraggedId(null); setDragOverId(null); }} onDragOver={(event) => { if (!reorderMode) return; event.preventDefault(); setDragOverId(idol.id); }} onDrop={(event) => { event.preventDefault(); void dropOn(idol.id); }} className={`rounded-2xl transition ${draggedId === idol.id ? 'opacity-40' : ''} ${dragOverId === idol.id && draggedId !== idol.id ? 'ring-2 ring-rose-300 ring-offset-2' : ''}`}><IdolCard idol={idol} reorderMode={reorderMode} canMoveUp={index > 0} canMoveDown={index < idols.length - 1} onMoveUp={() => void moveId(idol.id, index - 1)} onMoveDown={() => void moveId(idol.id, index + 1)} onEdit={() => setEditing(idol)} onDelete={() => void remove(idol)} onWrite={() => void browser.tabs.create({ url: idol.postUrl })} onToggle={() => void toggleNotifications(idol)} /></div>)}</div>
     {idols.length >= 10 && <p className="mt-3 text-center text-xs text-slate-400">{t('maxIdols')}</p>}
     <label className="mt-5 flex items-center justify-between border-t border-rose-100 pt-4 text-xs font-semibold text-slate-500"><span>{t('language')}</span><select value={language} onChange={(event) => { const value = event.target.value as LanguagePreference; setLanguage(value); void setLanguagePreference(value).then(() => location.reload()); }} className="rounded-lg border border-rose-100 bg-white px-2 py-1.5 text-xs outline-none"><option value="browser">{t('browserLanguage')}</option><option value="ko">{t('korean')}</option><option value="en">{t('english')}</option></select></label>
+    <p className="mt-2 rounded-xl bg-rose-50 px-3 py-2 text-[10px] leading-4 text-rose-400">{t('syncNotice')}</p>
     <section className="mt-4 border-t border-rose-100 pt-4">
       <button onClick={() => { const open = !diagnosticsOpen; setDiagnosticsOpen(open); if (open) void loadDiagnostics(); }} aria-expanded={diagnosticsOpen} className="flex w-full items-center justify-between text-xs font-semibold text-slate-500"><span className="flex items-center gap-1.5"><BellRing size={15} className="text-rose-400" />{t('notificationDiagnostics')}</span><ChevronDown size={16} className={`transition-transform ${diagnosticsOpen ? 'rotate-180' : ''}`} /></button>
       {diagnosticsOpen && <div className="mt-3 rounded-xl bg-slate-50 p-3">

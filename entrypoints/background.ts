@@ -13,6 +13,9 @@ export default defineBackground(() => {
 
   browser.runtime.onInstalled.addListener(() => void rescheduleSafely());
   browser.runtime.onStartup.addListener(() => void rescheduleSafely());
+  browser.storage.onChanged.addListener((_changes, areaName) => {
+    if (areaName === 'sync') void rescheduleSafely();
+  });
   browser.runtime.onMessage.addListener((message: unknown) => {
     const type = (message as { type?: string })?.type;
     if (type === 'DATA_CHANGED' || type === 'CHECK_SCHEDULE') void rescheduleSafely();
