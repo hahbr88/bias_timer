@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Download, ListRestart, Plus, Sparkles, Upload } from 'lucide-react';
+import { BellRing, Check, ChevronDown, Download, ListRestart, Plus, Send, Sparkles, Upload } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { Countdown } from '../../components/Countdown';
 import { IdolCard } from '../../components/IdolCard';
@@ -9,7 +9,14 @@ import { clearRegistrationDraft, getIdols, getRegistrationDraft, notifyDataChang
 import { getFavoriteTimes, getNextFavorite } from '../../lib/time';
 import type { Idol, RegistrationDraft } from '../../types/idol';
 import { createBackup, restoreBackup } from '../../lib/backup';
-import { getLanguagePreference, setLanguagePreference, t, type LanguagePreference } from '../../lib/i18n';
+import { currentLocale, getLanguagePreference, setLanguagePreference, t, type LanguagePreference } from '../../lib/i18n';
+import { parseAlarm, showTestNotification } from '../../lib/scheduler';
+
+interface NotificationDiagnostics {
+  permission: 'granted' | 'denied';
+  nextScheduledAt: number | null;
+  timezone: string;
+}
 
 export default function App() {
   const [idols, setIdols] = useState<Idol[]>([]);
@@ -22,11 +29,43 @@ export default function App() {
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupMessage, setBackupMessage] = useState('');
   const [language, setLanguage] = useState<LanguagePreference>(() => getLanguagePreference());
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<NotificationDiagnostics | null>(null);
+  const [testStatus, setTestStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   useEffect(() => {
     void browser.runtime.sendMessage({ type: 'CHECK_SCHEDULE' }).catch(() => undefined);
     void Promise.all([getIdols(), getRegistrationDraft()]).then(([savedIdols, draft]) => { setIdols(savedIdols); setRegistrationDraft(draft); }).finally(() => setLoading(false));
   }, []);
   const next = useMemo(() => getNextFavorite(idols), [idols]);
+  async function loadDiagnostics() {
+    const [permission, alarms] = await Promise.all([
+      browser.notifications.getPermissionLevel(),
+      browser.alarms.getAll(),
+    ]);
+    const nextScheduledAt = alarms
+      .map((alarm) => ({ alarm, parsed: parseAlarm(alarm.name) }))
+      .filter((item): item is { alarm: typeof item.alarm; parsed: NonNullable<typeof item.parsed> } => item.parsed !== null)
+      .map(({ alarm, parsed }) => alarm.scheduledTime ?? parsed.at)
+      .filter((at) => at >= Date.now())
+      .sort((a, b) => a - b)[0] ?? null;
+    setDiagnostics({
+      permission,
+      nextScheduledAt,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    });
+  }
+  async function sendTestNotification() {
+    setTestStatus('sending');
+    try {
+      await showTestNotification();
+      setTestStatus('sent');
+      window.setTimeout(() => setTestStatus('idle'), 3000);
+    } catch (error) {
+      console.error('테스트 알림을 보내지 못했습니다.', error);
+      setTestStatus('failed');
+    }
+    await loadDiagnostics().catch(() => undefined);
+  }
   async function persist(nextIdols: Idol[]) { setIdols(nextIdols); await saveIdols(nextIdols); await notifyDataChanged(); }
   async function save(draft: IdolDraft) {
     if (editing === 'new' && idols.length >= 10) throw new Error(t('maxIdols'));
@@ -122,6 +161,15 @@ export default function App() {
     <div className="space-y-2">{idols.map((idol, index) => <div key={idol.id} draggable={reorderMode} onDragStart={() => setDraggedId(idol.id)} onDragEnd={() => { setDraggedId(null); setDragOverId(null); }} onDragOver={(event) => { if (!reorderMode) return; event.preventDefault(); setDragOverId(idol.id); }} onDrop={(event) => { event.preventDefault(); void dropOn(idol.id); }} className={`rounded-2xl transition ${draggedId === idol.id ? 'opacity-40' : ''} ${dragOverId === idol.id && draggedId !== idol.id ? 'ring-2 ring-rose-300 ring-offset-2' : ''}`}><IdolCard idol={idol} reorderMode={reorderMode} canMoveUp={index > 0} canMoveDown={index < idols.length - 1} onMoveUp={() => void moveId(idol.id, index - 1)} onMoveDown={() => void moveId(idol.id, index + 1)} onEdit={() => setEditing(idol)} onDelete={() => void remove(idol)} onWrite={() => void browser.tabs.create({ url: idol.postUrl })} onToggle={() => void toggleNotifications(idol)} /></div>)}</div>
     {idols.length >= 10 && <p className="mt-3 text-center text-xs text-slate-400">{t('maxIdols')}</p>}
     <label className="mt-5 flex items-center justify-between border-t border-rose-100 pt-4 text-xs font-semibold text-slate-500"><span>{t('language')}</span><select value={language} onChange={(event) => { const value = event.target.value as LanguagePreference; setLanguage(value); void setLanguagePreference(value).then(() => location.reload()); }} className="rounded-lg border border-rose-100 bg-white px-2 py-1.5 text-xs outline-none"><option value="browser">{t('browserLanguage')}</option><option value="ko">{t('korean')}</option><option value="en">{t('english')}</option></select></label>
+    <section className="mt-4 border-t border-rose-100 pt-4">
+      <button onClick={() => { const open = !diagnosticsOpen; setDiagnosticsOpen(open); if (open) void loadDiagnostics(); }} aria-expanded={diagnosticsOpen} className="flex w-full items-center justify-between text-xs font-semibold text-slate-500"><span className="flex items-center gap-1.5"><BellRing size={15} className="text-rose-400" />{t('notificationDiagnostics')}</span><ChevronDown size={16} className={`transition-transform ${diagnosticsOpen ? 'rotate-180' : ''}`} /></button>
+      {diagnosticsOpen && <div className="mt-3 rounded-xl bg-slate-50 p-3">
+        {diagnostics ? <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-[11px]"><dt className="text-slate-400">{t('notificationPermission')}</dt><dd className={`text-right font-semibold ${diagnostics.permission === 'granted' ? 'text-emerald-500' : 'text-rose-500'}`}>{diagnostics.permission === 'granted' ? t('permissionGranted') : t('permissionDenied')}</dd><dt className="text-slate-400">{t('nextSchedule')}</dt><dd className="text-right font-semibold text-slate-600">{diagnostics.nextScheduledAt ? new Intl.DateTimeFormat(currentLocale() === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(diagnostics.nextScheduledAt) : t('noSchedule')}</dd><dt className="text-slate-400">{t('timezone')}</dt><dd className="text-right font-semibold text-slate-600">{diagnostics.timezone}</dd><dt className="text-slate-400">{t('currentLanguage')}</dt><dd className="text-right font-semibold text-slate-600">{currentLocale() === 'ko' ? t('korean') : t('english')}</dd></dl> : <p className="text-center text-[11px] text-slate-400">{t('loading')}</p>}
+        <button disabled={testStatus === 'sending' || testStatus === 'sent'} onClick={() => void sendTestNotification()} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-rose-500 py-2.5 text-xs font-semibold text-white disabled:bg-rose-300"><Send size={14} />{testStatus === 'sending' ? t('sendingTestNotification') : testStatus === 'sent' ? t('testNotificationSent') : t('sendTestNotification')}</button>
+        {testStatus === 'failed' && <p className="mt-2 text-center text-[11px] text-rose-500">{t('testNotificationFailed')}</p>}
+        <p className="mt-2 text-center text-[10px] leading-4 text-slate-400">{t('testNotificationHelp')}</p>
+      </div>}
+    </section>
     <section className="mt-5 border-t border-rose-100 pt-4"><div className="flex gap-2"><button disabled={backupBusy} onClick={() => void exportBackup()} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-rose-50 py-2.5 text-xs font-semibold text-rose-500 disabled:opacity-50"><Download size={15} /> {t('backupSave')}</button><label className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2.5 text-xs font-semibold text-slate-500 ${backupBusy ? 'pointer-events-none opacity-50' : ''}`}><Upload size={15} /> {t('backupRestore')}<input type="file" accept="application/json,.json" className="hidden" onChange={(event) => { void importBackup(event.target.files?.[0]); event.target.value = ''; }} /></label></div>{backupMessage && <p className="mt-2 text-center text-[11px] text-slate-500">{backupMessage}</p>}<p className="mt-2 text-center text-[10px] text-slate-400">{t('backupHelp')}</p></section>
   </main>;
 }

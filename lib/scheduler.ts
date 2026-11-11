@@ -6,6 +6,7 @@ import type { AlarmType, FavoriteEvent } from '../types/idol';
 import { initializeI18n, t } from './i18n';
 
 const PREFIX = 'bias-timer:';
+const TEST_NOTIFICATION_PREFIX = `${PREFIX}test:`;
 export const MAINTENANCE_ALARM_NAME = `${PREFIX}maintenance`;
 const MAINTENANCE_INTERVAL_MINUTES = 15;
 let schedulingQueue: Promise<void> = Promise.resolve();
@@ -77,7 +78,35 @@ export async function showAlarmNotification(name: string) {
   });
 }
 
+export async function showTestNotification() {
+  await initializeI18n();
+  const idols = await getIdols();
+  const idol = idols[0];
+  const displayName = idol ? idol.nickname || idol.name : '';
+  let profileIcon: string | null = null;
+  if (idol?.photoId) {
+    try {
+      profileIcon = await getPhotoDataUrl(idol.photoId);
+    } catch (error) {
+      console.warn('테스트 알림용 프로필 사진을 불러오지 못했습니다.', error);
+    }
+  }
+  const idolId = idol?.id ?? 'default';
+  await browser.notifications.create(`${TEST_NOTIFICATION_PREFIX}${idolId}:${Date.now()}`, {
+    type: 'basic',
+    iconUrl: profileIcon ?? browser.runtime.getURL('/icon/128.png'),
+    title: displayName ? t('testNotificationTitle', displayName) : t('testNotificationTitleDefault'),
+    message: t('testNotificationBody'),
+  });
+}
+
 export async function openNotificationLink(notificationId: string) {
+  if (notificationId.startsWith(TEST_NOTIFICATION_PREFIX)) {
+    const idolId = notificationId.slice(TEST_NOTIFICATION_PREFIX.length).split(':')[0];
+    const idol = (await getIdols()).find((item) => item.id === idolId);
+    if (idol?.postUrl && /^https?:\/\//i.test(idol.postUrl)) await browser.tabs.create({ url: idol.postUrl });
+    return;
+  }
   const parsed = parseAlarm(notificationId);
   if (!parsed) return;
   const [idols, settings] = await Promise.all([getIdols(), getSettings()]);
