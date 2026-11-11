@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getFavoriteTimes, getNextFavorite, getUpcomingEvents, isNotificationWithinDeliveryWindow } from '../lib/time';
+import { getCurrentFavorite, getFavoriteTimes, getNextFavorite, getUpcomingEvents, isNotificationWithinDeliveryWindow } from '../lib/time';
 import type { Idol } from '../types/idol';
 
 function idol(overrides: Partial<Idol> = {}): Idol {
@@ -79,6 +79,23 @@ describe('getNextFavorite', () => {
     ], from);
     expect(next?.idols[0]?.id).toBe('first');
     expect(next?.at).toEqual(new Date(2026, 10, 9, 8, 1, 0));
+  });
+});
+
+describe('getCurrentFavorite', () => {
+  it('정각부터 59초까지 현재 최애시를 반환한다', () => {
+    const favorite = idol({ id: 'current', nickname: '꾸라', birthMonth: 8, birthDay: 1 });
+    expect(getCurrentFavorite([favorite], new Date(2026, 10, 9, 8, 1, 0))?.idols[0]?.id).toBe('current');
+    expect(getCurrentFavorite([favorite], new Date(2026, 10, 9, 8, 1, 59))?.idols[0]?.id).toBe('current');
+  });
+
+  it('다음 분이 되면 현재 최애시를 종료한다', () => {
+    expect(getCurrentFavorite([idol()], new Date(2026, 10, 9, 8, 2, 0))).toBeNull();
+  });
+
+  it('같은 시각의 여러 최애를 함께 반환한다', () => {
+    const current = getCurrentFavorite([idol({ id: 'a' }), idol({ id: 'b' })], new Date(2026, 10, 9, 20, 1, 30));
+    expect(current?.idols.map((item) => item.id)).toEqual(['a', 'b']);
   });
 });
 

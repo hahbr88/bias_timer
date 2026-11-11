@@ -62,6 +62,15 @@ export function getNextFavorite(idols: Idol[], from = new Date()) {
   return next;
 }
 
+export function getCurrentFavorite(idols: Idol[], now = new Date()) {
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const currentIdols = idols.filter((idol) => idol.notificationEnabled && getFavoriteTimes(idol.birthMonth, idol.birthDay).includes(currentTime));
+  if (currentIdols.length === 0) return null;
+  const at = new Date(now);
+  at.setSeconds(0, 0);
+  return { at, idols: currentIdols };
+}
+
 export function formatCountdown(ms: number) {
   const seconds = Math.max(0, Math.floor(ms / 1000));
   return {

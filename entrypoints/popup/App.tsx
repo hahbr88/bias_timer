@@ -4,9 +4,10 @@ import { browser } from 'wxt/browser';
 import { Countdown } from '../../components/Countdown';
 import { IdolCard } from '../../components/IdolCard';
 import { IdolForm, type IdolDraft } from '../../components/IdolForm';
+import { CurrentFavoriteCard } from '../../components/CurrentFavoriteCard';
 import { deletePhoto, savePhoto } from '../../lib/images';
 import { clearRegistrationDraft, getIdols, getRegistrationDraft, notifyDataChanged, saveIdols, saveRegistrationDraft } from '../../lib/storage';
-import { getFavoriteTimes, getNextFavorite } from '../../lib/time';
+import { getCurrentFavorite, getFavoriteTimes, getNextFavorite } from '../../lib/time';
 import type { Idol, RegistrationDraft } from '../../types/idol';
 import { createBackup, restoreBackup } from '../../lib/backup';
 import { currentLocale, getLanguagePreference, setLanguagePreference, t, type LanguagePreference } from '../../lib/i18n';
@@ -32,11 +33,17 @@ export default function App() {
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState<NotificationDiagnostics | null>(null);
   const [testStatus, setTestStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  const [now, setNow] = useState(Date.now());
   useEffect(() => {
     void browser.runtime.sendMessage({ type: 'CHECK_SCHEDULE' }).catch(() => undefined);
     void Promise.all([getIdols(), getRegistrationDraft()]).then(([savedIdols, draft]) => { setIdols(savedIdols); setRegistrationDraft(draft); }).finally(() => setLoading(false));
   }, []);
-  const next = useMemo(() => getNextFavorite(idols), [idols]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const current = useMemo(() => getCurrentFavorite(idols, new Date(now)), [idols, now]);
+  const next = useMemo(() => getNextFavorite(idols, new Date(now)), [idols, now]);
   async function loadDiagnostics() {
     const [permission, alarms] = await Promise.all([
       browser.notifications.getPermissionLevel(),
@@ -155,7 +162,7 @@ export default function App() {
   if (editing) return <IdolForm initial={editing === 'new' ? undefined : editing} initialDraft={editing === 'new' ? registrationDraft : undefined} onDraftChange={editing === 'new' ? updateDraft : undefined} onCancel={() => void cancelForm()} onSave={save} />;
   return <main className="p-4">
     <header className="mb-4 flex items-center justify-between"><div><div className="flex items-center gap-1.5 text-xl font-black"><Sparkles size={19} className="text-rose-400" /> {t('extName')}</div><p className="mt-0.5 text-xs text-slate-400">{t('appTagline')}</p></div><div className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-400">{idols.length} / 10</div></header>
-    {next ? <section className="card mb-5 overflow-hidden p-4 text-center"><div className="text-[11px] font-bold tracking-[.18em] text-rose-400">{t('nextTime')}</div><div className="mt-2 text-lg font-bold">{next.idols.map((idol) => idol.name).join(', ')}</div><div className="text-xs text-slate-400">{next.idols[0]?.groupName || t('solo')} · {getFavoriteTimes(next.idols[0]!.birthMonth, next.idols[0]!.birthDay).join(' / ')}</div><Countdown target={next.at} /></section> : <section className="card mb-5 p-7 text-center"><div className="text-sm font-semibold">{t('firstIdol')}</div><div className="mt-1 text-xs text-slate-400">{t('firstIdolHelp')}</div></section>}
+    {current ? <CurrentFavoriteCard idols={current.idols} at={current.at} now={now} /> : next ? <section className="card mb-5 overflow-hidden p-4 text-center"><div className="text-[11px] font-bold tracking-[.18em] text-rose-400">{t('nextTime')}</div><div className="mt-2 text-lg font-bold">{next.idols.map((idol) => idol.name).join(', ')}</div><div className="text-xs text-slate-400">{next.idols[0]?.groupName || t('solo')} · {getFavoriteTimes(next.idols[0]!.birthMonth, next.idols[0]!.birthDay).join(' / ')}</div><Countdown target={next.at} /></section> : <section className="card mb-5 p-7 text-center"><div className="text-sm font-semibold">{t('firstIdol')}</div><div className="mt-1 text-xs text-slate-400">{t('firstIdolHelp')}</div></section>}
     <div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-bold">등록한 최애</h2><div className="flex gap-1.5">{idols.length > 1 && <button onClick={() => { setReorderMode((value) => !value); setDraggedId(null); setDragOverId(null); }} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${reorderMode ? 'bg-slate-700 text-white' : 'bg-rose-50 text-rose-400'}`}>{reorderMode ? <Check size={14} /> : <ListRestart size={14} />}{reorderMode ? '완료' : '순서 변경'}</button>}<button disabled={idols.length >= 10 || reorderMode} onClick={() => setEditing('new')} className="flex items-center gap-1 rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white disabled:bg-slate-200"><Plus size={14} /> {registrationDraft ? '계속 작성' : '등록'}</button></div></div>
     {reorderMode && <p className="mb-2 text-center text-[11px] text-slate-400">{t('reorderHelp')}</p>}
     <div className="space-y-2">{idols.map((idol, index) => <div key={idol.id} draggable={reorderMode} onDragStart={() => setDraggedId(idol.id)} onDragEnd={() => { setDraggedId(null); setDragOverId(null); }} onDragOver={(event) => { if (!reorderMode) return; event.preventDefault(); setDragOverId(idol.id); }} onDrop={(event) => { event.preventDefault(); void dropOn(idol.id); }} className={`rounded-2xl transition ${draggedId === idol.id ? 'opacity-40' : ''} ${dragOverId === idol.id && draggedId !== idol.id ? 'ring-2 ring-rose-300 ring-offset-2' : ''}`}><IdolCard idol={idol} reorderMode={reorderMode} canMoveUp={index > 0} canMoveDown={index < idols.length - 1} onMoveUp={() => void moveId(idol.id, index - 1)} onMoveDown={() => void moveId(idol.id, index + 1)} onEdit={() => setEditing(idol)} onDelete={() => void remove(idol)} onWrite={() => void browser.tabs.create({ url: idol.postUrl })} onToggle={() => void toggleNotifications(idol)} /></div>)}</div>

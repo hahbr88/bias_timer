@@ -7,3 +7,10 @@ body { margin: 0; width: 380px; min-height: 560px; }
 button, input { font: inherit; }
 .card { @apply rounded-2xl border border-rose-100 bg-white shadow-sm; }
 .input { @apply w-full rounded-xl border border-rose-100 bg-white px-3 py-2.5 outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100; }
+
+@keyframes favorite-glow {
+  0%, 100% { box-shadow: 0 1px 3px rgb(244 63 94 / 0.12), 0 0 0 0 rgb(251 113 133 / 0.12); }
+  50% { box-shadow: 0 8px 24px rgb(244 63 94 / 0.2), 0 0 0 5px rgb(251 113 133 / 0.08); }
+}
+.current-favorite-card { border-color: rgb(251 113 133 / 0.55); background: linear-gradient(145deg, #fff 0%, #fff1f5 55%, #ffe4e6 100%); animation: favorite-glow 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .current-favorite-card { animation: none; } }
