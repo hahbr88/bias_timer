@@ -3,7 +3,7 @@
   "extDescription":{"message":"내 최애의 특별한 시간을 놓치지 않도록 알려드려요."},
   "localeCode":{"message":"ko"},
   "back":{"message":"돌아가기"}, "registerTitle":{"message":"최애 등록"}, "editTitle":{"message":"최애 수정"},
-  "name":{"message":"이름"}, "nickname":{"message":"애칭·별명"}, "nicknamePlaceholder":{"message":"예: 채채, 꾸라, 허댕, 즈뭉, 만채"}, "groupName":{"message":"그룹명"},
+  "name":{"message":"이름"}, "nickname":{"message":"애칭·별명"}, "groupName":{"message":"그룹명"},
   "postLink":{"message":"글 쓰러 갈 링크"}, "postLinkHelp":{"message":"알림이나 ‘글 쓰기’를 누르면 새 탭으로 열려요."}, "birthday":{"message":"생일"},
   "month":{"message":"$1월"}, "dateMonthDay":{"message":"$1월 $2일"}, "yearIgnored":{"message":"연도는 최애시 계산에 사용하지 않아요."},
   "photoPreview":{"message":"프로필 사진 미리보기"}, "photoSaving":{"message":"사진 저장 중…"}, "changePhoto":{"message":"사진 변경하기"}, "selectPhoto":{"message":"프로필 사진 선택"},

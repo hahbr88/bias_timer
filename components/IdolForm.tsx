@@ -79,7 +79,7 @@ export function IdolForm({ initial, initialDraft, onDraftChange, onCancel, onSav
     <h1 className="mb-5 text-xl font-bold">{initial ? t('editTitle') : t('registerTitle')}</h1>
     <div className="space-y-3">
       <label className="block text-xs font-medium text-slate-500">{t('name')} *<input className="input mt-1" value={name} maxLength={30} onChange={(e) => setName(e.target.value)} autoFocus /></label>
-      <label className="block text-xs font-medium text-slate-500">{t('nickname')}<input className="input mt-1" value={nickname} maxLength={20} placeholder={t('nicknamePlaceholder')} onChange={(e) => setNickname(e.target.value)} /></label>
+      <label className="block text-xs font-medium text-slate-500">{t('nickname')}<input className="input mt-1" value={nickname} maxLength={20} onChange={(e) => setNickname(e.target.value)} /></label>
       <label className="block text-xs font-medium text-slate-500">{t('groupName')}<input className="input mt-1" value={groupName} maxLength={40} onChange={(e) => setGroupName(e.target.value)} /></label>
       <label className="block text-xs font-medium text-slate-500">{t('postLink')}<input className="input mt-1" type="url" value={postUrl} maxLength={500} placeholder="https://weverse.io/..." onChange={(e) => setPostUrl(e.target.value)} /><span className="mt-1 block text-[10px] font-normal text-slate-400">{t('postLinkHelp')}</span></label>
       <div className="relative">
