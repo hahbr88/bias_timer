@@ -1,13 +1,7 @@
-import { useEffect, useState } from 'react';
 import { formatCountdown } from '../lib/time';
 import { t } from '../lib/i18n';
 
-export function Countdown({ target }: { target: Date }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [target]);
+export function Countdown({ target, now }: { target: Date; now: number }) {
   const value = formatCountdown(target.getTime() - now);
   return <div className="flex items-end justify-center gap-2 py-3">
     {([[t('hours'), value.hours], [t('minuteUnit'), value.minutes], [t('seconds'), value.seconds]] as const).map(([label, number]) =>
