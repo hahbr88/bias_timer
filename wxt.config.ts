@@ -6,7 +6,7 @@ export default defineConfig({
     name: '__MSG_extName__',
     description: '__MSG_extDescription__',
     default_locale: 'ko',
-    version: '1.0.1',
+    version: '1.0.2',
     icons: {
       16: 'icon/16.png',
       32: 'icon/32.png',
