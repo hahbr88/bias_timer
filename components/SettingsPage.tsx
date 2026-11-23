@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, BellRing, Download, Languages, RefreshCw, Send, Upload } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { createBackup, restoreBackup } from '../lib/backup';
-import { currentLocale, getLanguagePreference, setLanguagePreference, t, type LanguagePreference } from '../lib/i18n';
+import { currentLocale, getLanguagePreference, initializeI18n, setLanguagePreference, t, type LanguagePreference } from '../lib/i18n';
 import { parseAlarm, showTestNotification } from '../lib/scheduler';
 import type { Idol } from '../types/idol';
 
@@ -19,6 +19,8 @@ interface SettingsPageProps {
 
 export function SettingsPage({ onBack, onRestored }: SettingsPageProps) {
   const [language, setLanguage] = useState<LanguagePreference>(() => getLanguagePreference());
+  const [appliedLanguage, setAppliedLanguage] = useState<LanguagePreference>(() => getLanguagePreference());
+  const [languageApplying, setLanguageApplying] = useState(false);
   const [diagnostics, setDiagnostics] = useState<NotificationDiagnostics | null>(null);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(true);
   const [testStatus, setTestStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
@@ -46,6 +48,18 @@ export function SettingsPage({ onBack, onRestored }: SettingsPageProps) {
   }
 
   useEffect(() => { void loadDiagnostics(); }, []);
+
+  async function applyLanguage() {
+    if (language === appliedLanguage) return;
+    setLanguageApplying(true);
+    try {
+      await setLanguagePreference(language);
+      await initializeI18n();
+      setAppliedLanguage(language);
+    } finally {
+      setLanguageApplying(false);
+    }
+  }
 
   async function sendTestNotification() {
     setTestStatus('sending');
@@ -121,7 +135,8 @@ export function SettingsPage({ onBack, onRestored }: SettingsPageProps) {
 
     <section className="card mt-3 p-4">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-bold"><Languages size={16} className="text-rose-400" />{t('languageSettings')}</h2>
-      <label className="flex items-center justify-between text-xs font-semibold text-slate-500"><span>{t('language')}</span><select value={language} onChange={(event) => { const value = event.target.value as LanguagePreference; setLanguage(value); void setLanguagePreference(value).then(() => location.reload()); }} className="rounded-lg border border-rose-100 bg-white px-2 py-1.5 text-xs outline-none"><option value="browser">{t('browserLanguage')}</option><option value="ko">{t('korean')}</option><option value="en">{t('english')}</option></select></label>
+      <label className="flex items-center justify-between text-xs font-semibold text-slate-500"><span>{t('language')}</span><select value={language} onChange={(event) => setLanguage(event.target.value as LanguagePreference)} className="rounded-lg border border-rose-100 bg-white px-2 py-1.5 text-xs outline-none"><option value="browser">{t('browserLanguage')}</option><option value="ko">{t('korean')}</option><option value="en">{t('english')}</option></select></label>
+      <button type="button" disabled={language === appliedLanguage || languageApplying} onClick={() => void applyLanguage()} className="mt-3 w-full rounded-lg bg-rose-500 py-2.5 text-xs font-semibold text-white disabled:bg-slate-200 disabled:text-slate-400">{languageApplying ? t('applying') : t('apply')}</button>
     </section>
 
     <section className="card mt-3 p-4">
