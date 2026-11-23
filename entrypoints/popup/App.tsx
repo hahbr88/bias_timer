@@ -1,23 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BellRing, Check, ChevronDown, Download, ListRestart, Plus, Send, Sparkles, Upload } from 'lucide-react';
+import { Check, ListRestart, Plus, Settings, Sparkles } from 'lucide-react';
 import { browser } from 'wxt/browser';
 import { Countdown } from '../../components/Countdown';
 import { IdolCard } from '../../components/IdolCard';
 import { IdolForm, type IdolDraft } from '../../components/IdolForm';
 import { CurrentFavoriteCard } from '../../components/CurrentFavoriteCard';
+import { SettingsPage } from '../../components/SettingsPage';
 import { deletePhoto, savePhoto } from '../../lib/images';
 import { clearRegistrationDraft, getIdols, getRegistrationDraft, notifyDataChanged, saveIdols, saveRegistrationDraft } from '../../lib/storage';
 import { getCurrentFavorite, getFavoriteTimes, getNextFavorite } from '../../lib/time';
 import type { Idol, RegistrationDraft } from '../../types/idol';
-import { createBackup, restoreBackup } from '../../lib/backup';
-import { currentLocale, getLanguagePreference, setLanguagePreference, t, type LanguagePreference } from '../../lib/i18n';
-import { parseAlarm, showTestNotification } from '../../lib/scheduler';
-
-interface NotificationDiagnostics {
-  permission: 'granted' | 'denied';
-  nextScheduledAt: number | null;
-  timezone: string;
-}
+import { t } from '../../lib/i18n';
 
 export default function App() {
   const [idols, setIdols] = useState<Idol[]>([]);
@@ -27,12 +20,7 @@ export default function App() {
   const [reorderMode, setReorderMode] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
-  const [backupBusy, setBackupBusy] = useState(false);
-  const [backupMessage, setBackupMessage] = useState('');
-  const [language, setLanguage] = useState<LanguagePreference>(() => getLanguagePreference());
-  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
-  const [diagnostics, setDiagnostics] = useState<NotificationDiagnostics | null>(null);
-  const [testStatus, setTestStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     void browser.runtime.sendMessage({ type: 'CHECK_SCHEDULE' }).catch(() => undefined);
@@ -48,40 +36,13 @@ export default function App() {
     return () => browser.storage.onChanged.removeListener(handleStorageChange);
   }, []);
   useEffect(() => {
+    if (settingsOpen) return undefined;
+    setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [settingsOpen]);
   const current = useMemo(() => getCurrentFavorite(idols, new Date(now)), [idols, now]);
   const next = useMemo(() => getNextFavorite(idols, new Date(now)), [idols, now]);
-  async function loadDiagnostics() {
-    const [permission, alarms] = await Promise.all([
-      browser.notifications.getPermissionLevel(),
-      browser.alarms.getAll(),
-    ]);
-    const nextScheduledAt = alarms
-      .map((alarm) => ({ alarm, parsed: parseAlarm(alarm.name) }))
-      .filter((item): item is { alarm: typeof item.alarm; parsed: NonNullable<typeof item.parsed> } => item.parsed !== null)
-      .map(({ alarm, parsed }) => alarm.scheduledTime ?? parsed.at)
-      .filter((at) => at >= Date.now())
-      .sort((a, b) => a - b)[0] ?? null;
-    setDiagnostics({
-      permission,
-      nextScheduledAt,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    });
-  }
-  async function sendTestNotification() {
-    setTestStatus('sending');
-    try {
-      await showTestNotification();
-      setTestStatus('sent');
-      window.setTimeout(() => setTestStatus('idle'), 3000);
-    } catch (error) {
-      console.error('테스트 알림을 보내지 못했습니다.', error);
-      setTestStatus('failed');
-    }
-    await loadDiagnostics().catch(() => undefined);
-  }
   async function persist(nextIdols: Idol[]) { setIdols(nextIdols); await saveIdols(nextIdols); await notifyDataChanged(); }
   async function save(draft: IdolDraft) {
     if (editing === 'new' && idols.length >= 10) throw new Error(t('maxIdols'));
@@ -127,34 +88,6 @@ export default function App() {
     setDraggedId(null);
     setDragOverId(null);
   }
-  async function exportBackup() {
-    setBackupBusy(true); setBackupMessage('');
-    try {
-      const backup = await createBackup();
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `bias-timer-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      anchor.click();
-      URL.revokeObjectURL(url);
-      setBackupMessage(t('backupSaved'));
-    } catch (error) { setBackupMessage(error instanceof Error ? error.message : t('backupCreateFailed')); }
-    finally { setBackupBusy(false); }
-  }
-  async function importBackup(file?: File) {
-    if (!file) return;
-    if (!confirm(t('restoreConfirm'))) return;
-    setBackupBusy(true); setBackupMessage('');
-    try {
-      if (file.size > 25 * 1024 * 1024) throw new Error(t('backupTooLarge'));
-      const restoredIdols = await restoreBackup(await file.text());
-      setIdols(restoredIdols);
-      setRegistrationDraft(null);
-      setBackupMessage(t('restoredCount', String(restoredIdols.length)));
-    } catch (error) { setBackupMessage(error instanceof Error ? error.message : t('restoreFailed')); }
-    finally { setBackupBusy(false); }
-  }
   async function cancelForm() {
     if (editing === 'new') {
       await deletePhoto(registrationDraft?.photoId ?? null);
@@ -168,25 +101,14 @@ export default function App() {
     void saveRegistrationDraft(draft);
   }, []);
   if (loading) return <div className="grid h-[560px] place-items-center text-sm text-rose-400">{t('loading')}</div>;
+  if (settingsOpen) return <SettingsPage onBack={() => setSettingsOpen(false)} onRestored={(restoredIdols) => { setIdols(restoredIdols); setRegistrationDraft(null); }} />;
   if (editing) return <IdolForm initial={editing === 'new' ? undefined : editing} initialDraft={editing === 'new' ? registrationDraft : undefined} onDraftChange={editing === 'new' ? updateDraft : undefined} onCancel={() => void cancelForm()} onSave={save} />;
   return <main className="p-4">
-    <header className="mb-4 flex items-center justify-between"><div><div className="flex items-center gap-1.5 text-xl font-black"><Sparkles size={19} className="text-rose-400" /> {t('extName')}</div><p className="mt-0.5 text-xs text-slate-400">{t('appTagline')}</p></div><div className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-400">{idols.length} / 10</div></header>
+    <header className="mb-4 flex items-center justify-between"><div><div className="flex items-center gap-1.5 text-xl font-black"><Sparkles size={19} className="text-rose-400" /> {t('extName')}</div><p className="mt-0.5 text-xs text-slate-400">{t('appTagline')}</p></div><div className="flex items-center gap-2"><div className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-400">{idols.length} / 10</div><button type="button" onClick={() => { setReorderMode(false); setSettingsOpen(true); }} aria-label={t('settings')} title={t('settings')} className="grid h-9 w-9 place-items-center rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-rose-100 transition hover:bg-rose-50 hover:text-rose-500"><Settings size={17} /></button></div></header>
     {current ? <CurrentFavoriteCard idols={current.idols} at={current.at} now={now} /> : next ? <section className="card mb-5 overflow-hidden p-4 text-center"><div className="text-[11px] font-bold tracking-[.18em] text-rose-400">{t('nextTime')}</div><div className="mt-2 text-lg font-bold">{next.idols.map((idol) => idol.name).join(', ')}</div><div className="text-xs text-slate-400">{next.idols[0]?.groupName || t('solo')} · {getFavoriteTimes(next.idols[0]!.birthMonth, next.idols[0]!.birthDay).join(' / ')}</div><Countdown target={next.at} now={now} /></section> : <section className="card mb-5 p-7 text-center"><div className="text-sm font-semibold">{t('firstIdol')}</div><div className="mt-1 text-xs text-slate-400">{t('firstIdolHelp')}</div></section>}
     <div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-bold">등록한 최애</h2><div className="flex gap-1.5">{idols.length > 1 && <button onClick={() => { setReorderMode((value) => !value); setDraggedId(null); setDragOverId(null); }} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${reorderMode ? 'bg-slate-700 text-white' : 'bg-rose-50 text-rose-400'}`}>{reorderMode ? <Check size={14} /> : <ListRestart size={14} />}{reorderMode ? '완료' : '순서 변경'}</button>}<button disabled={idols.length >= 10 || reorderMode} onClick={() => setEditing('new')} className="flex items-center gap-1 rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white disabled:bg-slate-200"><Plus size={14} /> {registrationDraft ? '계속 작성' : '등록'}</button></div></div>
     {reorderMode && <p className="mb-2 text-center text-[11px] text-slate-400">{t('reorderHelp')}</p>}
     <div className="space-y-2">{idols.map((idol, index) => <div key={idol.id} draggable={reorderMode} onDragStart={() => setDraggedId(idol.id)} onDragEnd={() => { setDraggedId(null); setDragOverId(null); }} onDragOver={(event) => { if (!reorderMode) return; event.preventDefault(); setDragOverId(idol.id); }} onDrop={(event) => { event.preventDefault(); void dropOn(idol.id); }} className={`rounded-2xl transition ${draggedId === idol.id ? 'opacity-40' : ''} ${dragOverId === idol.id && draggedId !== idol.id ? 'ring-2 ring-rose-300 ring-offset-2' : ''}`}><IdolCard idol={idol} reorderMode={reorderMode} canMoveUp={index > 0} canMoveDown={index < idols.length - 1} onMoveUp={() => void moveId(idol.id, index - 1)} onMoveDown={() => void moveId(idol.id, index + 1)} onEdit={() => setEditing(idol)} onDelete={() => void remove(idol)} onWrite={() => void browser.tabs.create({ url: idol.postUrl })} onToggle={() => void toggleNotifications(idol)} /></div>)}</div>
     {idols.length >= 10 && <p className="mt-3 text-center text-xs text-slate-400">{t('maxIdols')}</p>}
-    <label className="mt-5 flex items-center justify-between border-t border-rose-100 pt-4 text-xs font-semibold text-slate-500"><span>{t('language')}</span><select value={language} onChange={(event) => { const value = event.target.value as LanguagePreference; setLanguage(value); void setLanguagePreference(value).then(() => location.reload()); }} className="rounded-lg border border-rose-100 bg-white px-2 py-1.5 text-xs outline-none"><option value="browser">{t('browserLanguage')}</option><option value="ko">{t('korean')}</option><option value="en">{t('english')}</option></select></label>
-    <p className="mt-2 rounded-xl bg-rose-50 px-3 py-2 text-[10px] leading-4 text-rose-400">{t('syncNotice')}</p>
-    <section className="mt-4 border-t border-rose-100 pt-4">
-      <button onClick={() => { const open = !diagnosticsOpen; setDiagnosticsOpen(open); if (open) void loadDiagnostics(); }} aria-expanded={diagnosticsOpen} className="flex w-full items-center justify-between text-xs font-semibold text-slate-500"><span className="flex items-center gap-1.5"><BellRing size={15} className="text-rose-400" />{t('notificationDiagnostics')}</span><ChevronDown size={16} className={`transition-transform ${diagnosticsOpen ? 'rotate-180' : ''}`} /></button>
-      {diagnosticsOpen && <div className="mt-3 rounded-xl bg-slate-50 p-3">
-        {diagnostics ? <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-[11px]"><dt className="text-slate-400">{t('notificationPermission')}</dt><dd className={`text-right font-semibold ${diagnostics.permission === 'granted' ? 'text-emerald-500' : 'text-rose-500'}`}>{diagnostics.permission === 'granted' ? t('permissionGranted') : t('permissionDenied')}</dd><dt className="text-slate-400">{t('nextSchedule')}</dt><dd className="text-right font-semibold text-slate-600">{diagnostics.nextScheduledAt ? new Intl.DateTimeFormat(currentLocale() === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(diagnostics.nextScheduledAt) : t('noSchedule')}</dd><dt className="text-slate-400">{t('timezone')}</dt><dd className="text-right font-semibold text-slate-600">{diagnostics.timezone}</dd><dt className="text-slate-400">{t('currentLanguage')}</dt><dd className="text-right font-semibold text-slate-600">{currentLocale() === 'ko' ? t('korean') : t('english')}</dd></dl> : <p className="text-center text-[11px] text-slate-400">{t('loading')}</p>}
-        <button disabled={testStatus === 'sending' || testStatus === 'sent'} onClick={() => void sendTestNotification()} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-rose-500 py-2.5 text-xs font-semibold text-white disabled:bg-rose-300"><Send size={14} />{testStatus === 'sending' ? t('sendingTestNotification') : testStatus === 'sent' ? t('testNotificationSent') : t('sendTestNotification')}</button>
-        {testStatus === 'failed' && <p className="mt-2 text-center text-[11px] text-rose-500">{t('testNotificationFailed')}</p>}
-        <p className="mt-2 text-center text-[10px] leading-4 text-slate-400">{t('testNotificationHelp')}</p>
-      </div>}
-    </section>
-    <section className="mt-5 border-t border-rose-100 pt-4"><div className="flex gap-2"><button disabled={backupBusy} onClick={() => void exportBackup()} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-rose-50 py-2.5 text-xs font-semibold text-rose-500 disabled:opacity-50"><Download size={15} /> {t('backupSave')}</button><label className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2.5 text-xs font-semibold text-slate-500 ${backupBusy ? 'pointer-events-none opacity-50' : ''}`}><Upload size={15} /> {t('backupRestore')}<input type="file" accept="application/json,.json" className="hidden" onChange={(event) => { void importBackup(event.target.files?.[0]); event.target.value = ''; }} /></label></div>{backupMessage && <p className="mt-2 text-center text-[11px] text-slate-500">{backupMessage}</p>}<p className="mt-2 text-center text-[10px] text-slate-400">{t('backupHelp')}</p></section>
   </main>;
 }
